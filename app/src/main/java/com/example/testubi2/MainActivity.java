@@ -50,9 +50,9 @@ public class MainActivity extends Activity {
 
 
     public class ApiUbidots extends AsyncTask<Integer, ProgressUpdate, Void> {
-        private final String API_KEY_UBIDOTS = "BBFF-8d4be2086079ff2f8e8549e9deb08d45c5a";
-        private final String TempVariable_ID = "63f570cd795933000b0c4546";
-        private final String HumVariable_ID = "63f570cc9234c4000c2199ae";
+        private final String API_KEY_UBIDOTS = "BBFF-afb3417c4ec24fb54a5ceea0fefcad4769e";
+        private final String TempVariable_ID = "63f5681cbd2642000e8ab943";
+        private final String HumVariable_ID = "63f5688a3aae23000c8bc907";
 
 
         @Override
