@@ -21,21 +21,22 @@
         android:layout_marginTop="10dp"
         app:layout_constraintBottom_toTopOf="@id/devicesTitle"
         />
+
     <TextView
         android:id="@+id/devicesTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Seleccione el dispositivo que desea controlar"
-        android:textColor="@color/black"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/logout_btn"
-        android:textAlignment="center"
-        android:layout_marginTop="30dp"
-        android:textSize="22dp"
         android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginTop="30dp"
+        android:layout_marginRight="10dp"
+        android:text="Selecciona el Vehiculo"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="22dp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/logout_btn" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_device"

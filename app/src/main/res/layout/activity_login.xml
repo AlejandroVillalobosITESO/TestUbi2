@@ -20,12 +20,12 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="CONTROL CLIMÁTICO"
+            android:layout_marginBottom="60dp"
             android:gravity="center"
+            android:text="EQUIPO3 IOT"
             android:textColor="@color/black"
             android:textSize="25dp"
-            android:textStyle="bold"
-            android:layout_marginBottom="60dp"/>
+            android:textStyle="bold" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"

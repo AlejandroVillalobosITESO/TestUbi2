@@ -1,107 +1,130 @@
 package com.example.testubi2;
 
-import android.app.Activity;
-import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.ImageView;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.ubidots.ApiClient;
 import com.ubidots.Value;
 import com.ubidots.Variable;
 
-public class MainActivity extends Activity {
-    private TextView temperatura;
-    private TextView humedad;
-    private ImageView tempImg;
-    private Boolean active;
+import java.util.List;
+import java.util.Locale;
 
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    private static final String MAP_VIEW_BUNDLE_KEY = "MapViewBundleKey";
+    private GoogleMap mMap;
+    private MapView mMapView;
+    private Handler mHandler;
+
+    private TextView mHeartRateTextView;
+
+    private static final String API_KEY = "[API_KEY]";
+    private static final String HEART_RATE_VARIABLE_ID = "[HEART_RATE_VARIABLE_ID]";
+    private static final String LOCATION_VARIABLE_ID = "[LOCATION_VARIABLE_ID]";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        temperatura = findViewById(R.id.temperatura);
-        humedad = findViewById(R.id.humedad);
-        tempImg = findViewById(R.id.tempImg);
-        active = true;
-        new ApiUbidots().execute();
+        mHeartRateTextView = findViewById(R.id.heart_rate_text_view);
 
+        mHandler = new Handler(Looper.getMainLooper());
+        startRepeatingTask();
+        initGoogleMap(savedInstanceState);
     }
 
-
-
-    @Override
-    protected void onStop() {
-
-        super.onStop();
-        active = false;
+    private void initGoogleMap(Bundle savedInstanceState) {
+        mMapView = findViewById(R.id.map_view);
+        mMapView.onCreate(savedInstanceState);
+        mMapView.getMapAsync(this);
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        active = true;
-        new ApiUbidots().execute();
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        updateMapLocation();
     }
 
-
-    public class ApiUbidots extends AsyncTask<Integer, ProgressUpdate, Void> {
-        private final String API_KEY_UBIDOTS = "BBFF-afb3417c4ec24fb54a5ceea0fefcad4769e";
-        private final String TempVariable_ID = "63f5681cbd2642000e8ab943";
-        private final String HumVariable_ID = "63f5688a3aae23000c8bc907";
-
-
-        @Override
-        protected Void doInBackground(Integer... params) {
-            while(active){
-                ApiClient apiClient = new ApiClient(API_KEY_UBIDOTS); //API_KEY de Ubidots
-                Variable temperatura = apiClient.getVariable(TempVariable_ID); //Obtener referencia a la variable de temperatura con su ID
-                Variable humedad = apiClient.getVariable(HumVariable_ID); //Obtener referencia a la variable de humedad con su ID
-                Value[] valoresTemperatura = temperatura.getValues(); //Obtener valores cambiantes de temperatura
-                Value[] valoresHumedad = humedad.getValues(); //Obtener valores cambiantes de humedad
-
-                Log.wtf("UBIDOTS", String.valueOf(valoresTemperatura[0].getValue()));
-                Log.wtf("UBIDOTS", String.valueOf(valoresHumedad[0].getValue()));
-
-
-                String valorActualTemp = String.valueOf(valoresTemperatura[0].getValue()); //obtener valor actual de temperatura
-                String valorActualHum = String.valueOf(valoresHumedad[0].getValue()); //obtener valor actual de humedad
-                publishProgress(new ProgressUpdate(valorActualTemp, valorActualHum)); //actualizar UI con valores actuales
+    private void updateMapLocation() {
+        ApiClient apiClient = new ApiClient(API_KEY);
+        Variable locationVariable = apiClient.getVariable(LOCATION_VARIABLE_ID);
+        locationVariable.getValues(new ApiCallback<List<Value>>() {
+            @Override
+            public void onResponse(List<Value> values) {
+                if (values != null && values.size() > 0) {
+                    Value value = values.get(0);
+                    double latitude = value.getLatitude();
+                    double longitude = value.getLongitude();
+                    LatLng latLng = new LatLng(latitude, longitude);
+                    MarkerOptions markerOptions = new MarkerOptions().position(latLng);
+                    mMap.clear();
+                    mMap.addMarker(markerOptions);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+                }
             }
-            return null;
-        }
 
-        @Override
-        protected void onProgressUpdate(ProgressUpdate... values) { //método para actualizar UI
-            super.onProgressUpdate(values);
-            temperatura.setText(values[0].temperatura);
-            humedad.setText(values[0].humedad);
-        }
-
-        @Override
-        protected void onPostExecute(Void unused) {
-            super.onPostExecute(unused);
-            new ApiUbidots().execute();
-        }
+            @Override
+            public void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders) {
+                Toast.makeText(MainActivity.this, "Failed to get location", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    class ProgressUpdate {
-        public final String temperatura;
-        public final String humedad;
-
-        public ProgressUpdate(String temperatura, String humedad) {
-            this.temperatura = temperatura;
-            this.humedad = humedad;
-
-            if(Double.parseDouble(temperatura) < 28 && temperatura!= null){
-                tempImg.setColorFilter(Color.GREEN);
-            }else{
-                tempImg.setColorFilter(Color.RED);
+    Runnable mStatusChecker = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                updateHeartRate();
+            } finally {
+                mHandler.postDelayed(mStatusChecker, 5000);
             }
         }
+    };
+
+    void startRepeatingTask() {
+        mStatusChecker.run();
+    }
+
+    void stopRepeatingTask() {
+        mHandler.removeCallbacks(mStatusChecker);
+    }
+
+    private void updateHeartRate() {
+        ApiClient apiClient = new ApiClient(API_KEY);
+        Variable heartRateVariable = apiClient.getVariable(HEART_RATE_VARIABLE_ID);
+        heartRateVariable.getValues(new ApiCallback<List<Value>>() {
+            @Override
+            public void onResponse(List<Value> values) {
+                if (values != null && values.size() > 0) {
+                    Value value = values.get(0);
+                    double heartRate = value.getValue();
+                    mHeartRateTextView.setText(String.format(Locale.getDefault(), "%.0f", heartRate));
+                }
+            }
+
+            @Override
+            public void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders) {
+                Toast.makeText(MainActivity.this, "Failed to get heart rate", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopRepeatingTask();
     }
 }

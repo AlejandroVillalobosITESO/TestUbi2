@@ -1,5 +1,6 @@
 package com.example.testubi2
 
+import MainActivity
 import android.content.Intent
 import android.content.res.Resources
 import android.view.LayoutInflater
