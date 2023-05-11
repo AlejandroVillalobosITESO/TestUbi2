@@ -127,4 +127,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onDestroy();
         stopRepeatingTask();
     }
+
 }
